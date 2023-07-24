@@ -1,5 +1,6 @@
 const { Amqp } = require('azure-iot-device-amqp');
 const { Client } = require('azure-iot-device');
+const { MongoClient } = require('mongodb');
 const connectionString = 'HostName=carteplus-iothub-nred.azure-devices.net;DeviceId=ckplcnred;SharedAccessKey=yE+SgpaLcuXFlNRy745eX/1pSOiw4jGro4sDCRoj/Tc=';
 const client = Client.fromConnectionString(connectionString, Amqp);
 
@@ -7,17 +8,80 @@ const MONGODB_URI = 'mongodb://127.0.0.1:27017/';
 const DATABASE_NAME = 'database';
 const COLLECTION_NAME = 'table';
 
-async function processData(data_json) {
-  try {
+
+async function connectToMongoDB() 
+{
+  try 
+  {
+    const client = await MongoClient.connect(MONGODB_URI);
+    return client;
+  } catch (err) 
+  {
+    console.error('Error connecting to MongoDB:', err);
+    throw err;
+  }
+}
+
+async function insertDocument(collection, data) 
+{
+  try 
+  {
+    const result = await collection.insertOne(data);
+    //console.log('Inserted document:', result.ops[0]);
+  } catch (err) 
+  {
+    //console.error('Error inserting document:', err);
+    throw err;
+  }
+}
+async function findDocument(collection, query) 
+{
+  try 
+  
+  {
+    const result = await collection.findOne(query);
+    return result;
+  } catch (err) 
+  {
+   // console.error('Error finding document:', err);
+    throw err;
+  }
+}
+
+async function processData(data_json) 
+{
+  try 
+  {
     const client = await connectToMongoDB();
     const database = client.db(DATABASE_NAME);
     const collection = database.collection(COLLECTION_NAME);
 
-    const result = await collection.insertOne(data_json);
-    console.log('Inserted document:', result.ops[0]);
+    if (data_json.commandType <= 6) {
+      if ('pRequestId' in data_json) {
+        const query = { pRequestId: data_json.pRequestId };
+        const result = await findDocument(collection, query);
+        if (!result) {
+          await insertDocument(collection, data_json);
+        } else {
+          console.log('Document with pRequestId already exists:', data_json.pRequestId);
+        }
+      } else if ('rRequestId' in data_json) {
+        const query = { rRequestId: data_json.rRequestId };
+        const result = await findDocument(collection, query);
+        if (!result) {
+          await insertDocument(collection, data_json);
+        } else {
+          console.log('Document with rRequestId already exists:', data_json.rRequestId);
+        }
+      } else {
+        await insertDocument(collection, data_json);
+      }
+    }
 
     client.close();
-  } catch (err) {
+  } 
+  catch (err) 
+  {
     console.error('Error processing data:', err);
   }
 }
