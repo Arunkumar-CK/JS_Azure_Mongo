@@ -1,0 +1,18 @@
+{
+  "dependencies": {
+    "azure-iot-common": "^1.13.2",
+    "azure-iot-device": "^1.18.2",
+    "azure-iot-device-amqp": "^1.14.2",
+    "mongodb": "^5.7.0",
+    "uuid": "^9.0.0"
+  },
+  "name": "azure",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

@@ -1,8 +1,27 @@
 const { Amqp } = require('azure-iot-device-amqp');
 const { Client } = require('azure-iot-device');
-
-
 const connectionString = 'HostName=carteplus-iothub-nred.azure-devices.net;DeviceId=ckplcnred;SharedAccessKey=yE+SgpaLcuXFlNRy745eX/1pSOiw4jGro4sDCRoj/Tc=';
+const client = Client.fromConnectionString(connectionString, Amqp);
+
+const MONGODB_URI = 'mongodb://127.0.0.1:27017/';
+const DATABASE_NAME = 'database';
+const COLLECTION_NAME = 'table';
+
+async function processData(data_json) {
+  try {
+    const client = await connectToMongoDB();
+    const database = client.db(DATABASE_NAME);
+    const collection = database.collection(COLLECTION_NAME);
+
+    const result = await collection.insertOne(data_json);
+    console.log('Inserted document:', result.ops[0]);
+
+    client.close();
+  } catch (err) {
+    console.error('Error processing data:', err);
+  }
+}
+
 function onMessageReceived(msg) {
   const messageData = msg.getData();
   try {
@@ -10,7 +29,7 @@ function onMessageReceived(msg) {
     const jsonData = JSON.parse(jsonString);
     console.log('Received Message (as JSON):');
     console.log(jsonData);
-  
+    processData(jsonData);
 
 
   } catch (error) {
